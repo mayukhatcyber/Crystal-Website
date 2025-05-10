@@ -12,6 +12,14 @@ import { AnimatedText } from "@/components/animated-text"
 import { AnimatedCounter } from "@/components/animated-counter"
 import { AnimatedBackground } from "@/components/animated-background"
 import { useMobile } from "@/hooks/use-mobile"
+import { SkipLink } from "@/components/skip-link"
+import { FocusTrap } from "@/components/focus-trap"
+import { AccessibleContactForm } from "@/components/accessible-form"
+import { VoiceCommandButton } from "@/components/voice-command-button"
+import { VoiceFeedback } from "@/components/voice-feedback"
+import { VoiceNavigationHandler } from "@/components/voice-navigation-handler"
+import { VoiceFormHandler } from "@/components/voice-form-handler"
+import { VoiceTutorial } from "@/components/voice-tutorial"
 
 export default function Home() {
   const isMobile = useMobile()
@@ -27,9 +35,28 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && mobileMenuOpen) {
+        setMobileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [mobileMenuOpen])
+
   return (
     <div className="flex flex-col min-h-screen">
+      <SkipLink />
       <AnimatedBackground />
+
+      {/* Voice command components */}
+      <VoiceCommandButton />
+      <VoiceFeedback />
+      <VoiceNavigationHandler />
+      <VoiceFormHandler />
+      <VoiceTutorial />
 
       <header
         className={`sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ${
@@ -71,6 +98,7 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3, delay: 0.6 }}
+              aria-hidden="true"
             >
               <ThemeToggle />
             </motion.div>
@@ -89,7 +117,15 @@ export default function Home() {
               </Button>
             </motion.div>
 
-            <Button variant="outline" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(true)}>
+            <Button
+              variant="outline"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Open menu"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
+            >
               <span className="sr-only">Toggle menu</span>
               <Menu className="h-6 w-6" />
             </Button>
@@ -101,59 +137,69 @@ export default function Home() {
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
+            id="mobile-menu"
             initial={{ opacity: 0, x: "100%" }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile navigation menu"
           >
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between p-4 border-b">
-                <div className="flex items-center gap-2">
-                  <img src="https://tinyurl.com/logocrystal" alt="Logo" className="h-6 w-6" />
-                  <span className="text-xl font-bold">Crystal Engineering</span>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
-                  <X className="h-6 w-6" />
-                </Button>
-              </div>
-              <div className="flex flex-col gap-4 p-6">
-                {["Home", "Services", "Projects", "About", "Contact"].map((item, i) => (
-                  <motion.div
-                    key={item}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.1 * i }}
-                  >
-                    <Link
-                      href={item === "Home" ? "/" : `#${item.toLowerCase()}`}
-                      className="text-lg font-medium block py-2"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {item}
-                    </Link>
-                  </motion.div>
-                ))}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.6 }}
-                  className="mt-4"
-                >
-                  <Button asChild className="w-full">
-                    <Link href="#contact" onClick={() => setMobileMenuOpen(false)}>
-                      Get a Quote
-                    </Link>
+            <FocusTrap isActive={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between p-4 border-b">
+                  <div className="flex items-center gap-2">
+                    <img src="https://tinyurl.com/logocrystal" alt="Logo" className="h-6 w-6" />
+                    <span className="text-xl font-bold">Crystal Engineering</span>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">
+                    <X className="h-6 w-6" />
                   </Button>
-                </motion.div>
+                </div>
+                <div className="flex flex-col gap-4 p-6">
+                  {["Home", "Services", "Projects", "About", "Contact"].map((item, i) => (
+                    <motion.div
+                      key={item}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: 0.1 * i }}
+                    >
+                      <Link
+                        href={item === "Home" ? "/" : `#${item.toLowerCase()}`}
+                        className="text-lg font-medium block py-2"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {item}
+                      </Link>
+                    </motion.div>
+                  ))}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.6 }}
+                    className="mt-4"
+                  >
+                    <Button asChild className="w-full">
+                      <Link href="#contact" onClick={() => setMobileMenuOpen(false)}>
+                        Get a Quote
+                      </Link>
+                    </Button>
+                  </motion.div>
+                </div>
               </div>
-            </div>
+            </FocusTrap>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 relative overflow-hidden">
+      <main id="main-content" className="flex-1" tabIndex={-1}>
+        <section
+          className="w-full py-12 md:py-24 lg:py-32 relative overflow-hidden"
+          role="region"
+          aria-labelledby="hero-heading"
+        >
           <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent dark:from-blue-900/20 -z-10"></div>
           <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
@@ -206,7 +252,12 @@ export default function Home() {
                         <span className="absolute inset-0 bg-primary-foreground opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
                       </Link>
                     </Button>
-                    <Button variant="outline" size="lg" asChild className="relative overflow-hidden group">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      asChild
+                      className="relative overflow-hidden group focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    >
                       <Link href="#services">
                         <span className="relative z-10">Explore Our Services</span>
                         <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-500 group-hover:w-full"></span>
@@ -233,7 +284,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="w-full py-12 md:py-24 lg:py-32 relative">
+        <section className="w-full py-12 md:py-24 lg:py-32 relative" role="region" aria-labelledby="stats-heading">
           <div className="container px-4 md:px-6">
             <AnimatedSection>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 mb-12">
@@ -270,10 +321,9 @@ export default function Home() {
                   <div className="inline-block rounded-lg bg-blue-100 dark:bg-blue-900/50 px-3 py-1 text-sm text-blue-800 dark:text-blue-300">
                     Our Services
                   </div>
-                  <AnimatedText
-                    text="Comprehensive Electrical Solutions"
-                    className="text-3xl font-bold tracking-tighter md:text-4xl"
-                  />
+                  <h2 id="stats-heading" className="text-3xl font-bold tracking-tighter md:text-4xl">
+                    Comprehensive Electrical Solutions
+                  </h2>
                   <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                     We provide end-to-end services for all types of substation-based electrical projects
                   </p>
@@ -359,7 +409,12 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="projects" className="w-full py-12 md:py-24 lg:py-32 bg-muted/50 relative">
+        <section
+          id="projects"
+          className="w-full py-12 md:py-24 lg:py-32 bg-muted/50 relative"
+          role="region"
+          aria-labelledby="projects-heading"
+        >
           <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent dark:from-blue-900/10 -z-10"></div>
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
@@ -368,7 +423,9 @@ export default function Home() {
                   <div className="inline-block rounded-lg bg-blue-100 dark:bg-blue-900/50 px-3 py-1 text-sm text-blue-800 dark:text-blue-300">
                     Our Projects
                   </div>
-                  <AnimatedText text="Featured Work" className="text-3xl font-bold tracking-tighter md:text-4xl" />
+                  <h2 id="projects-heading" className="text-3xl font-bold tracking-tighter md:text-4xl">
+                    Featured Work
+                  </h2>
                   <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                     Explore some of our recent substation and electrical infrastructure projects
                   </p>
@@ -422,7 +479,11 @@ export default function Home() {
 
             <AnimatedSection delay={0.5}>
               <div className="flex justify-center mt-8">
-                <Button variant="outline" size="lg" className="group relative overflow-hidden">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="group relative overflow-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
                   <span className="relative z-10">View All Projects</span>
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-500 group-hover:w-full"></span>
                 </Button>
@@ -431,7 +492,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="about" className="w-full py-12 md:py-24 lg:py-32">
+        <section id="about" className="w-full py-12 md:py-24 lg:py-32" role="region" aria-labelledby="about-heading">
           <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
               <AnimatedSection>
@@ -439,10 +500,9 @@ export default function Home() {
                   <div className="inline-block rounded-lg bg-blue-100 dark:bg-blue-900/50 px-3 py-1 text-sm text-blue-800 dark:text-blue-300">
                     About Us
                   </div>
-                  <AnimatedText
-                    text="Crystal Engineering"
-                    className="text-3xl font-bold tracking-tighter md:text-4xl"
-                  />
+                  <h2 id="about-heading" className="text-3xl font-bold tracking-tighter md:text-4xl">
+                    Crystal Engineering
+                  </h2>
                   <p className="text-muted-foreground md:text-xl">
                     With over 9 years of experience in the electrical engineering sector, Crystal Engineering has
                     established itself as a trusted name in substation-based electrical service provider.
@@ -504,7 +564,12 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="contact" className="w-full py-12 md:py-24 lg:py-32 bg-muted/50 relative">
+        <section
+          id="contact"
+          className="w-full py-12 md:py-24 lg:py-32 bg-muted/50 relative"
+          role="region"
+          aria-labelledby="contact-heading"
+        >
           <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent dark:from-blue-900/10 -z-10"></div>
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
@@ -513,7 +578,9 @@ export default function Home() {
                   <div className="inline-block rounded-lg bg-blue-100 dark:bg-blue-900/50 px-3 py-1 text-sm text-blue-800 dark:text-blue-300">
                     Contact Us
                   </div>
-                  <AnimatedText text="Get in Touch" className="text-3xl font-bold tracking-tighter md:text-4xl" />
+                  <h2 id="contact-heading" className="text-3xl font-bold tracking-tighter md:text-4xl">
+                    Get in Touch
+                  </h2>
                   <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                     Reach out to discuss your electrical infrastructure needs
                   </p>
@@ -596,111 +663,7 @@ export default function Home() {
               </AnimatedSection>
 
               <AnimatedSection delay={0.3}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  viewport={{ once: true }}
-                  className="rounded-lg border bg-card p-6 shadow-sm"
-                >
-                  <h3 className="text-lg font-bold mb-4">Send us a Message</h3>
-                  <form className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label
-                          htmlFor="first-name"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          First name
-                        </label>
-                        <input
-                          id="first-name"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200"
-                          placeholder="John"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label
-                          htmlFor="last-name"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          Last name
-                        </label>
-                        <input
-                          id="last-name"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200"
-                          placeholder="Doe"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="email"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        Email
-                      </label>
-                      <input
-                        id="email"
-                        type="email"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200"
-                        placeholder="john.doe@example.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="phone"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        Phone
-                      </label>
-                      <input
-                        id="phone"
-                        type="tel"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200"
-                        placeholder="+91 98765 43210"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="project-type"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        Project Type
-                      </label>
-                      <select
-                        id="project-type"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200"
-                      >
-                        <option value="">Select Project Type</option>
-                        <option value="substation-installation">Substation Installation</option>
-                        <option value="maintenance-repair">Maintenance & Repair</option>
-                        <option value="upgrades-modernization">Upgrades & Modernization</option>
-                        <option value="testing-commissioning">Testing & Commissioning</option>
-                        <option value="consultancy">Consultancy Services</option>
-                        <option value="power-distribution">Power Distribution</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="message"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        Message
-                      </label>
-                      <textarea
-                        id="message"
-                        className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200"
-                        placeholder="Tell us about your project requirements..."
-                      ></textarea>
-                    </div>
-                    <Button type="submit" className="w-full relative overflow-hidden group">
-                      <span className="relative z-10">Send Message</span>
-                      <span className="absolute inset-0 bg-primary-foreground opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
-                    </Button>
-                  </form>
-                </motion.div>
+                <AccessibleContactForm />
               </AnimatedSection>
             </div>
           </div>
